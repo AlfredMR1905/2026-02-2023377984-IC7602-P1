@@ -1,0 +1,21 @@
+FROM rust:alpine AS builder
+
+WORKDIR /app
+
+COPY Cargo.toml .
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN cargo build --release
+
+COPY src src
+RUN touch src/main.rs
+RUN cargo build --release
+
+RUN strip target/release/dns_interceptor
+
+FROM alpine:latest AS release
+
+WORKDIR /app
+COPY --from=builder /app/target/release/dns_interceptor .
+
+
+CMD ["./dns_interceptor"]
