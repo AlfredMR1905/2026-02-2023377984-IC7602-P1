@@ -74,6 +74,39 @@ impl Question {
     }
 }
 
+pub fn build_a_response(
+    packet: &[u8],
+    header: &Header,
+    question_end: usize,
+    ipv4: [u8; 4],
+    ttl: u32,
+) -> io::Result<Vec<u8>> {
+    let question = packet
+        .get(12..question_end)
+        .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, "Pregunta DNS incompleta"))?;
+
+    let mut response = Vec::with_capacity(question_end + 16);
+
+    response.extend_from_slice(&header.id.to_be_bytes()); //ID
+    let response_flags = 0x8000 | (header.flags & 0x0100);
+    response.extend_from_slice(&response_flags.to_be_bytes()); //FLAGS
+    response.extend_from_slice(&1u16.to_be_bytes()); //QDCOUNT
+    response.extend_from_slice(&1u16.to_be_bytes()); //ANCOUNT
+    response.extend_from_slice(&0u16.to_be_bytes()); //NSCOUNT
+    response.extend_from_slice(&0u16.to_be_bytes()); //ARCOUNT 
+
+    response.extend_from_slice(question); //SECCION DE PREGUNTA
+
+    response.extend_from_slice(&[0xc0, 0x0c]); //Puntero a QNAME, el primer byte indica que es puntero, el segundo byte que comience el cursor en posicion 12
+    response.extend_from_slice(&1u16.to_be_bytes()); //TYPE 
+    response.extend_from_slice(&1u16.to_be_bytes()); //CLASS
+    response.extend_from_slice(&ttl.to_be_bytes()); //TTL
+    response.extend_from_slice(&4u16.to_be_bytes()); //RDLENGTH
+    response.extend_from_slice(&ipv4); //RDATA
+
+    Ok(response)
+}
+
 fn read_name(packet: &[u8], offset: usize) -> io::Result<(String, usize)> {
     let mut cursor = offset;
     let mut labels = Vec::new();
