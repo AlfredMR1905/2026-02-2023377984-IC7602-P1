@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dns-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dns-api
+  template:
+    metadata:
+      labels:
+        app: dns-api
+    spec:
+      containers:
+        - name: dns-api
+          image: "{{ .Values.api.image }}:{{ .Values.api.tag }}"
+          imagePullPolicy: {{ .Values.api.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.port }}
+              protocol: TCP
+          env:
+            - name: SERVER_PORT
+              value: {{ .Values.api.port | quote }}
+            - name: DNS_UPSTREAM_HOST
+              value: {{ .Values.api.upstreamHost | quote }}
+            - name: DNS_UPSTREAM_PORT
+              value: {{ .Values.api.upstreamPort | quote }}
+            - name: DNS_UPSTREAM_TIMEOUT_MS
+              value: {{ .Values.api.upstreamTimeoutMs | quote }}
