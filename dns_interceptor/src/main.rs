@@ -1,8 +1,10 @@
 mod api;
 mod dns;
+mod policy;
 
 use api::ApiClient;
 use dns::{Header, Question, build_a_response};
+use policy::PolicySelector;
 use std::env;
 use std::io::{self, ErrorKind};
 use std::net::{SocketAddr, UdpSocket};
@@ -17,6 +19,7 @@ fn main() -> std::io::Result<()> {
         ApiClient::new(api_base_url)
             .map_err(|error| io::Error::new(ErrorKind::InvalidInput, error))?,
     );
+    let selector = Arc::new(PolicySelector::new());
 
     let socket = Arc::new(UdpSocket::bind(&listen_addr)?);
     println!("Escuchando DNS por UDP en {}", socket.local_addr()?);
@@ -28,14 +31,27 @@ fn main() -> std::io::Result<()> {
         let packet = buf[..bytes_received].to_vec();
         let worker_socket = Arc::clone(&socket);
         let worker_api = Arc::clone(&api);
+        let worker_selector = Arc::clone(&selector);
 
         thread::spawn(move || {
-            handle_packet(&worker_socket, &worker_api, &packet, source);
+            handle_packet(
+                &worker_socket,
+                &worker_api,
+                &worker_selector,
+                &packet,
+                source,
+            );
         });
     }
 }
 
-fn handle_packet(socket: &UdpSocket, api: &ApiClient, packet: &[u8], source: SocketAddr) {
+fn handle_packet(
+    socket: &UdpSocket,
+    api: &ApiClient,
+    selector: &PolicySelector,
+    packet: &[u8],
+    source: SocketAddr,
+) {
     let header = match Header::parse(packet) {
         Ok(header) => header,
         Err(error) => {
@@ -70,13 +86,34 @@ fn handle_packet(socket: &UdpSocket, api: &ApiClient, packet: &[u8], source: Soc
 
     let domain = question.name.to_ascii_lowercase();
     match api.domain_exists(&domain) {
-        Ok(true) => match api.single_record(&domain) {
-            Ok((ipv4, ttl)) => {
-                match build_a_response(packet, &header, question_end, ipv4.octets(), ttl) {
-                    Ok(response) => send_packet(socket, &response, source, "respuesta local"),
-                    Err(error) => {
-                        eprintln!("No se pudo construir la respuesta para {source}: {error}")
+        Ok(true) => match api.domain_config(&domain) {
+            Ok(config) => {
+                let country = if config.policy == "geo" {
+                    match api.country_for_ip(&source.ip().to_string()) {
+                        Ok(country) => country,
+                        Err(error) => {
+                            eprintln!("No se pudo identificar el país de {source}: {error}");
+                            None
+                        }
                     }
+                } else {
+                    None
+                };
+
+                match selector.select(&domain, &config, country.as_deref()) {
+                    Ok(ipv4) => match build_a_response(
+                        packet,
+                        &header,
+                        question_end,
+                        ipv4.octets(),
+                        config.ttl,
+                    ) {
+                        Ok(response) => send_packet(socket, &response, source, "respuesta local"),
+                        Err(error) => {
+                            eprintln!("No se pudo construir la respuesta para {source}: {error}")
+                        }
+                    },
+                    Err(error) => eprintln!("No se pudo seleccionar la IP para {domain}: {error}"),
                 }
             }
             Err(error) => eprintln!("No se pudo resolver {domain}: {error}"),

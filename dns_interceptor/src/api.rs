@@ -15,16 +15,24 @@ struct ExistsResponse {
 }
 
 #[derive(Deserialize)]
-struct DomainConfig {
-    policy: String,
+pub struct DomainConfig {
+    pub policy: String,
     #[serde(default = "default_ttl")]
-    ttl: u32,
-    addresses: Vec<AddressConfig>,
+    pub ttl: u32,
+    pub addresses: Vec<AddressConfig>,
 }
 
 #[derive(Deserialize)]
-struct AddressConfig {
-    address: Ipv4Addr,
+pub struct AddressConfig {
+    pub address: Ipv4Addr,
+    #[serde(default = "default_weight")]
+    pub weight: u32,
+    pub country: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CountryResponse {
+    country: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -34,6 +42,10 @@ struct DnsPacketBody {
 
 fn default_ttl() -> u32 {
     60
+}
+
+fn default_weight() -> u32 {
+    1
 }
 
 impl ApiClient {
@@ -64,9 +76,8 @@ impl ApiClient {
         Ok(response.exists)
     }
 
-    pub fn single_record(&self, domain: &str) -> Result<(Ipv4Addr, u32), String> {
-        let config = self
-            .client
+    pub fn domain_config(&self, domain: &str) -> Result<DomainConfig, String> {
+        self.client
             .get(format!("{}/api/records", self.base_url))
             .query(&[("domain", domain)])
             .send()
@@ -74,20 +85,21 @@ impl ApiClient {
             .error_for_status()
             .map_err(|error| format!("GET /api/records respondió con error: {error}"))?
             .json::<DomainConfig>()
-            .map_err(|error| format!("Respuesta inválida de GET /api/records: {error}"))?;
+            .map_err(|error| format!("Respuesta inválida de GET /api/records: {error}"))
+    }
 
-        if config.policy != "single" {
-            return Err(format!(
-                "La política '{}' todavía no está implementada",
-                config.policy
-            ));
-        }
-
-        if config.addresses.len() != 1 {
-            return Err("La política single requiere exactamente una dirección IPv4".to_string());
-        }
-
-        Ok((config.addresses[0].address, config.ttl))
+    pub fn country_for_ip(&self, ip: &str) -> Result<Option<String>, String> {
+        let response = self
+            .client
+            .get(format!("{}/api/country", self.base_url))
+            .query(&[("ip", ip)])
+            .send()
+            .map_err(|error| format!("Falló GET /api/country: {error}"))?
+            .error_for_status()
+            .map_err(|error| format!("GET /api/country respondió con error: {error}"))?
+            .json::<CountryResponse>()
+            .map_err(|error| format!("Respuesta inválida de GET /api/country: {error}"))?;
+        Ok(response.country)
     }
 
     pub fn resolve_dns(&self, packet: &[u8]) -> Result<Vec<u8>, String> {

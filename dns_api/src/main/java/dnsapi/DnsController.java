@@ -1,6 +1,7 @@
 package dnsapi;
 
 import dnsapi.ApiModels.DnsPacketBody;
+import dnsapi.ApiModels.CountryResponse;
 import dnsapi.ApiModels.DomainConfig;
 import dnsapi.ApiModels.ExistsResponse;
 import org.springframework.http.HttpStatus;
@@ -40,6 +41,11 @@ public class DnsController {
                         HttpStatus.NOT_FOUND,
                         "El dominio no está configurado"
                 ));
+    }
+
+    @GetMapping("/country")
+    public CountryResponse country(@RequestParam String ip) {
+        return new CountryResponse(domainStore.countryForIp(ip).orElse(null));
     }
 
     @PostMapping("/dns_resolver")
