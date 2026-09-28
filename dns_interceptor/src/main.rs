@@ -87,18 +87,35 @@ fn handle_packet(
     let domain = question.name.to_ascii_lowercase();
     match api.domain_exists(&domain) {
         Ok(true) => match api.domain_config(&domain) {
-            Ok(config) => match selector.select(&domain, &config) {
-                Ok(ipv4) => {
-                    match build_a_response(packet, &header, question_end, ipv4.octets(), config.ttl)
-                    {
+            Ok(config) => {
+                let country = if config.policy == "geo" {
+                    match api.country_for_ip(&source.ip().to_string()) {
+                        Ok(country) => country,
+                        Err(error) => {
+                            eprintln!("No se pudo identificar el país de {source}: {error}");
+                            None
+                        }
+                    }
+                } else {
+                    None
+                };
+
+                match selector.select(&domain, &config, country.as_deref()) {
+                    Ok(ipv4) => match build_a_response(
+                        packet,
+                        &header,
+                        question_end,
+                        ipv4.octets(),
+                        config.ttl,
+                    ) {
                         Ok(response) => send_packet(socket, &response, source, "respuesta local"),
                         Err(error) => {
                             eprintln!("No se pudo construir la respuesta para {source}: {error}")
                         }
-                    }
+                    },
+                    Err(error) => eprintln!("No se pudo seleccionar la IP para {domain}: {error}"),
                 }
-                Err(error) => eprintln!("No se pudo seleccionar la IP para {domain}: {error}"),
-            },
+            }
             Err(error) => eprintln!("No se pudo resolver {domain}: {error}"),
         },
         Ok(false) => forward_packet(socket, api, packet, source),

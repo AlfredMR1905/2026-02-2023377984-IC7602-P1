@@ -1,4 +1,5 @@
 use crate::api::DomainConfig;
+use rand::Rng;
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
 use std::sync::Mutex;
@@ -14,7 +15,12 @@ impl PolicySelector {
         }
     }
 
-    pub fn select(&self, domain: &str, config: &DomainConfig) -> Result<Ipv4Addr, String> {
+    pub fn select(
+        &self,
+        domain: &str,
+        config: &DomainConfig,
+        client_country: Option<&str>,
+    ) -> Result<Ipv4Addr, String> {
         match config.policy.as_str() {
             "single" => {
                 if config.addresses.len() != 1 {
@@ -47,6 +53,23 @@ impl PolicySelector {
                     position -= weight;
                 }
                 Err("No se pudo seleccionar una dirección para weight".into())
+            }
+            "geo" => {
+                if config.addresses.is_empty() {
+                    return Err("geo requiere al menos una dirección IPv4".into());
+                }
+                if let Some(country) = client_country {
+                    if let Some(address) = config.addresses.iter().find(|address| {
+                        address
+                            .country
+                            .as_deref()
+                            .is_some_and(|value| value.eq_ignore_ascii_case(country))
+                    }) {
+                        return Ok(address.address);
+                    }
+                }
+                let position = rand::rng().random_range(0..config.addresses.len());
+                Ok(config.addresses[position].address)
             }
             policy => Err(format!("Política DNS desconocida: {policy}")),
         }

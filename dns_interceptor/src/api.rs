@@ -27,6 +27,12 @@ pub struct AddressConfig {
     pub address: Ipv4Addr,
     #[serde(default = "default_weight")]
     pub weight: u32,
+    pub country: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CountryResponse {
+    country: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -80,6 +86,20 @@ impl ApiClient {
             .map_err(|error| format!("GET /api/records respondió con error: {error}"))?
             .json::<DomainConfig>()
             .map_err(|error| format!("Respuesta inválida de GET /api/records: {error}"))
+    }
+
+    pub fn country_for_ip(&self, ip: &str) -> Result<Option<String>, String> {
+        let response = self
+            .client
+            .get(format!("{}/api/country", self.base_url))
+            .query(&[("ip", ip)])
+            .send()
+            .map_err(|error| format!("Falló GET /api/country: {error}"))?
+            .error_for_status()
+            .map_err(|error| format!("GET /api/country respondió con error: {error}"))?
+            .json::<CountryResponse>()
+            .map_err(|error| format!("Respuesta inválida de GET /api/country: {error}"))?;
+        Ok(response.country)
     }
 
     pub fn resolve_dns(&self, packet: &[u8]) -> Result<Vec<u8>, String> {
