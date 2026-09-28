@@ -1,0 +1,17 @@
+api:
+  image: dns-api
+  tag: local
+  pullPolicy: IfNotPresent
+  port: 8080
+  upstreamHost: 8.8.8.8
+  upstreamPort: 53
+  upstreamTimeoutMs: 5000
+
+interceptor:
+  image: dns-interceptor
+  tag: local
+  pullPolicy: IfNotPresent
+  port: 5358
+  service:
+    type: LoadBalancer
+    port: 53

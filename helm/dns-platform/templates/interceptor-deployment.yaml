@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dns-interceptor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dns-interceptor
+  template:
+    metadata:
+      labels:
+        app: dns-interceptor
+    spec:
+      containers:
+        - name: dns-interceptor
+          image: "{{ .Values.interceptor.image }}:{{ .Values.interceptor.tag }}"
+          imagePullPolicy: {{ .Values.interceptor.pullPolicy }}
+          ports:
+            - name: dns
+              containerPort: {{ .Values.interceptor.port }}
+              protocol: UDP
+          env:
+            - name: DNS_LISTEN_ADDR
+              value: "0.0.0.0:{{ .Values.interceptor.port }}"
+            - name: DNS_API_BASE_URL
+              value: "http://dns-api:{{ .Values.api.port }}"
