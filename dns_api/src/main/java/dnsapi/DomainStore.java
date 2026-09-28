@@ -16,7 +16,25 @@ public class DomainStore {
             new DomainConfig(
                     "single",
                     60,
-                    List.of(new AddressConfig("10.0.0.25"))
+                    List.of(new AddressConfig("10.0.0.25", 1))
+            ),
+            "multi.test",
+            new DomainConfig(
+                    "multi",
+                    60,
+                    List.of(
+                            new AddressConfig("10.0.0.11", 1),
+                            new AddressConfig("10.0.0.12", 1)
+                    )
+            ),
+            "weight.test",
+            new DomainConfig(
+                    "weight",
+                    60,
+                    List.of(
+                            new AddressConfig("10.0.0.21", 3),
+                            new AddressConfig("10.0.0.22", 1)
+                    )
             )
     );
 

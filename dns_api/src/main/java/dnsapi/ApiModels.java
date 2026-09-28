@@ -10,7 +10,7 @@ public final class ApiModels {
     public record ExistsResponse(boolean exists) {
     }
 
-    public record AddressConfig(String address) {
+    public record AddressConfig(String address, int weight) {
     }
 
     public record DomainConfig(String policy, int ttl, List<AddressConfig> addresses) {
