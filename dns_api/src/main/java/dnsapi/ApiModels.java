@@ -19,6 +19,18 @@ public final class ApiModels {
     public record DomainConfig(String policy, int ttl, List<AddressConfig> addresses) {
     }
 
+    public record DomainView(long id, String domain, String policy, int ttl, List<AddressConfig> addresses) {
+    }
+
+    public record SaveDomainRequest(String domain, String policy, int ttl, List<AddressConfig> addresses) {
+    }
+
+    public record IpCountryNetwork(long id, String network, String country) {
+    }
+
+    public record SaveIpCountryNetwork(String network, String country) {
+    }
+
     public record DnsPacketBody(String data) {
     }
 }
