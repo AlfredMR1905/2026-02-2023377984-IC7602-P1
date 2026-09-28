@@ -23,6 +23,16 @@ spec:
           env:
             - name: SERVER_PORT
               value: {{ .Values.api.port | quote }}
+            - name: SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.api.supabaseSecretName }}
+                  key: url
+            - name: SUPABASE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.api.supabaseSecretName }}
+                  key: key
             - name: DNS_UPSTREAM_HOST
               value: {{ .Values.api.upstreamHost | quote }}
             - name: DNS_UPSTREAM_PORT

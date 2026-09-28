@@ -3,6 +3,7 @@ api:
   tag: local
   pullPolicy: IfNotPresent
   port: 8080
+  supabaseSecretName: dns-supabase
   upstreamHost: 8.8.8.8
   upstreamPort: 53
   upstreamTimeoutMs: 5000

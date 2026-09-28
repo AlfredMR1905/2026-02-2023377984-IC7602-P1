@@ -1,66 +1,65 @@
 package dnsapi;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import org.springframework.stereotype.Component;
-
 import dnsapi.ApiModels.AddressConfig;
 import dnsapi.ApiModels.DomainConfig;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 @Component
 public class DomainStore {
 
-    // Rangos de demostracion
-    private final List<IpRange> ranges = List.of(
-            new IpRange("127.0.0.0", 8, "CR"),
-            new IpRange("10.0.0.0", 8, "CR"),
-            new IpRange("192.0.2.0", 24, "US")
-    );
+    private final RestClient supabase;
 
-    private final Map<String, DomainConfig> domains = Map.of(
-            "ejemplo.test",
-            new DomainConfig(
-                    "single",
-                    60,
-                    List.of(new AddressConfig("10.0.0.25", 1, null))
-            ),
-            "multi.test",
-            new DomainConfig(
-                    "multi",
-                    60,
-                    List.of(
-                            new AddressConfig("10.0.0.11", 1, null),
-                            new AddressConfig("10.0.0.12", 1, null)
-                    )
-            ),
-            "weight.test",
-            new DomainConfig(
-                    "weight",
-                    60,
-                    List.of(
-                            new AddressConfig("10.0.0.21", 3, null),
-                            new AddressConfig("10.0.0.22", 1, null)
-                    )
-            ),
-            "geo.test",
-            new DomainConfig(
-                    "geo",
-                    60,
-                    List.of(
-                            new AddressConfig("10.0.0.31", 1, "CR"),
-                            new AddressConfig("10.0.0.32", 1, "US")
-                    )
-            )
-    );
+    public DomainStore(@Value("${supabase.url}") String url, @Value("${supabase.key}") String key) {
+        this.supabase = RestClient.builder()
+                .baseUrl(url.replaceAll("/+$", "") + "/rest/v1")
+                .defaultHeader("apikey", key)
+                .build();
+    }
 
     public boolean exists(String domain) {
-        return domains.containsKey(normalize(domain));
+        IdRow[] rows = supabase.get()
+                .uri(uri -> uri.path("/dns_records")
+                        .queryParam("select", "id")
+                        .queryParam("domain", "eq." + normalize(domain))
+                        .queryParam("limit", 1)
+                        .build())
+                .retrieve()
+                .body(IdRow[].class);
+        return rows != null && rows.length > 0;
     }
 
     public Optional<DomainConfig> find(String domain) {
-        return Optional.ofNullable(domains.get(normalize(domain)));
+        RecordRow[] rows = supabase.get()
+                .uri(uri -> uri.path("/dns_records")
+                        .queryParam("select", "id,policy,ttl")
+                        .queryParam("domain", "eq." + normalize(domain))
+                        .queryParam("limit", 1)
+                        .build())
+                .retrieve()
+                .body(RecordRow[].class);
+        if (rows == null || rows.length == 0) {
+            return Optional.empty();
+        }
+        RecordRow row = rows[0];
+        return Optional.of(new DomainConfig(row.policy(), row.ttl(), addresses(row.id())));
+    }
+
+    private List<AddressConfig> addresses(long recordId) {
+        AddressConfig[] rows = supabase.get()
+                .uri(uri -> uri.path("/dns_addresses")
+                        .queryParam("select", "address,weight,country")
+                        .queryParam("record_id", "eq." + recordId)
+                        .queryParam("order", "id.asc")
+                        .build())
+                .retrieve()
+                .body(AddressConfig[].class);
+        return rows == null ? List.of() : Arrays.asList(rows);
     }
 
     public Optional<String> countryForIp(String ip) {
@@ -68,13 +67,28 @@ public class DomainStore {
         if (address < 0) {
             return Optional.empty();
         }
+        IpRange[] ranges = supabase.get()
+                .uri(uri -> uri.path("/ip_country_networks")
+                        .queryParam("select", "network,country")
+                        .build())
+                .retrieve()
+                .body(IpRange[].class);
+        if (ranges == null) {
+            return Optional.empty();
+        }
+
+        String country = null;
+        int longestPrefix = -1;
         for (IpRange range : ranges) {
-            long mask = (0xffff_ffffL << (32 - range.prefixBits())) & 0xffff_ffffL;
-            if ((address & mask) == (ipv4Number(range.network()) & mask)) {
-                return Optional.of(range.country());
+            String[] cidr = range.network().split("/");
+            int prefix = Integer.parseInt(cidr[1]);
+            long mask = (0xffff_ffffL << (32 - prefix)) & 0xffff_ffffL;
+            if (prefix > longestPrefix && (address & mask) == (ipv4Number(cidr[0]) & mask)) {
+                country = range.country();
+                longestPrefix = prefix;
             }
         }
-        return Optional.empty();
+        return Optional.ofNullable(country);
     }
 
     private long ipv4Number(String ip) {
@@ -97,10 +111,16 @@ public class DomainStore {
         return value;
     }
 
-    private record IpRange(String network, int prefixBits, String country) {
-    }
-
     private String normalize(String domain) {
         return domain.trim().toLowerCase();
+    }
+
+    private record RecordRow(long id, String policy, int ttl) {
+    }
+
+    private record IdRow(long id) {
+    }
+
+    private record IpRange(String network, String country) {
     }
 }
