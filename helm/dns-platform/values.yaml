@@ -16,3 +16,10 @@ interceptor:
   service:
     type: LoadBalancer
     port: 53
+
+ui:
+  image: dns-ui
+  tag: local
+  pullPolicy: IfNotPresent
+  port: 80
+  nodePort: 30080
