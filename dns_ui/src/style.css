@@ -1,0 +1,73 @@
+:root {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: #172338;
+  background: #f5f7fb;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+
+.shell { max-width: 1220px; margin: 0 auto; padding: 42px 28px 80px; }
+.topbar, .section-heading, .record-top, .network-record, .address-heading, .actions, .record-actions {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.topbar { padding-bottom: 28px; border-bottom: 1px solid #dce4ef; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { font-size: clamp(30px, 4vw, 44px); letter-spacing: -0.045em; margin-bottom: 8px; }
+h2 { font-size: 27px; letter-spacing: -0.035em; margin-bottom: 0; }
+h3 { font-size: 18px; margin-bottom: 22px; }
+.eyebrow { color: #3764a4; font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; margin-bottom: 10px; }
+.subtitle, .hint, .record p, .empty { color: #65758d; }
+.subtitle { margin-bottom: 0; }
+.status, .count, .chip { display: inline-block; border-radius: 99px; font-size: 12px; font-weight: 700; }
+.status { padding: 10px 15px; color: #22634c; background: #ddf5e9; white-space: nowrap; }
+.count { padding: 8px 12px; color: #49617f; background: #e8eef6; white-space: nowrap; }
+.section-heading { margin: 34px 0 17px; }
+.network-heading { margin-top: 44px; }
+.columns { display: grid; grid-template-columns: minmax(340px, 470px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.card { background: #fff; border: 1px solid #dce4ef; border-radius: 16px; box-shadow: 0 7px 25px #1a3d6b09; padding: 24px; }
+.form-card label { display: flex; flex-direction: column; gap: 7px; min-width: 0; font-size: 13px; font-weight: 700; color: #344760; margin-bottom: 17px; }
+input, select { width: 100%; min-height: 42px; padding: 9px 11px; color: #172338; background: #fff; border: 1px solid #cbd6e3; border-radius: 8px; outline-color: #3764a4; }
+input:focus, select:focus { border-color: #3764a4; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.address-heading { margin: 3px 0 10px; font-size: 13px; }
+.text-button { border: 0; background: none; color: #1c5faa; font-weight: 700; padding: 5px; }
+.address-row { display: grid; grid-template-columns: 1.5fr .8fr .7fr 28px; align-items: center; gap: 8px; }
+.address-row label { margin-bottom: 10px; }
+.icon-button { padding: 0; width: 28px; height: 28px; color: #7e8da0; background: transparent; border: 0; font-size: 24px; }
+.icon-button:hover, .danger:hover { color: #bd3540; }
+.hint { font-size: 12px; margin: 2px 0 22px; }
+.actions { justify-content: flex-start; flex-wrap: wrap; }
+.primary, .secondary, .record-actions button { border-radius: 8px; padding: 10px 14px; border: 1px solid transparent; font-weight: 700; }
+.primary { color: white; background: #245d9b; }
+.primary:hover { background: #164a83; }
+.secondary, .record-actions button { color: #315e91; background: #edf3fa; }
+.record-actions button:hover { background: #dceaf8; }
+.record-actions .danger { color: #9b4250; background: #fdf0f1; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.record { border-top: 1px solid #e5ebf2; padding: 17px 0; }
+.record:last-child { padding-bottom: 0; }
+.record strong { overflow-wrap: anywhere; }
+.record p { font-size: 13px; margin: 5px 0 0; }
+.record-actions { justify-content: flex-end; gap: 7px; flex-shrink: 0; }
+.record-actions button { padding: 7px 10px; font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.chip { padding: 7px 9px; color: #385575; background: #f0f4f9; }
+.empty { margin-bottom: 0; }
+.alert { padding: 12px 16px; border-radius: 9px; margin: 20px 0 0; }
+.error { color: #88313b; background: #fbe8ea; }
+.success { color: #22634c; background: #ddf5e9; }
+
+@media (max-width: 850px) {
+  .columns { grid-template-columns: 1fr; }
+  .shell { padding: 25px 16px 55px; }
+}
+@media (max-width: 520px) {
+  .topbar, .section-heading, .record-top, .network-record { align-items: flex-start; }
+  .topbar, .record-top, .network-record { flex-direction: column; }
+  .address-row { grid-template-columns: 1.4fr .8fr .8fr 24px; gap: 5px; }
+  .card { padding: 17px; }
+}
