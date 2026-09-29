@@ -12,7 +12,7 @@ interceptor:
   image: dns-interceptor
   tag: local
   pullPolicy: IfNotPresent
-  port: 5358
+  port: 53
   service:
     type: LoadBalancer
     port: 53

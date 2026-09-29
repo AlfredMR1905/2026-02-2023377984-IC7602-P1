@@ -20,5 +20,5 @@ RUN apt-get update \
 
 COPY --from=builder /app/target/release/dns_interceptor .
 
-EXPOSE 5358/udp
+EXPOSE 53/udp
 CMD ["./dns_interceptor"]
