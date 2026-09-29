@@ -1,6 +1,7 @@
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::net::Ipv4Addr;
 use std::time::Duration;
 
@@ -49,9 +50,16 @@ fn default_weight() -> u32 {
 }
 
 impl ApiClient {
-    pub fn new(base_url: String) -> Result<Self, String> {
-        let client = Client::builder()
-            .timeout(Duration::from_secs(5))
+    pub fn new(base_url: String, ca_cert_path: Option<&str>) -> Result<Self, String> {
+        let mut builder = Client::builder().timeout(Duration::from_secs(5));
+        if let Some(path) = ca_cert_path {
+            let pem = fs::read(path)
+                .map_err(|error| format!("No se pudo leer el certificado de la API: {error}"))?;
+            let certificate = reqwest::Certificate::from_pem(&pem)
+                .map_err(|error| format!("Certificado de la API inválido: {error}"))?;
+            builder = builder.add_root_certificate(certificate);
+        }
+        let client = builder
             .build()
             .map_err(|error| format!("No se pudo crear el cliente HTTP: {error}"))?;
 

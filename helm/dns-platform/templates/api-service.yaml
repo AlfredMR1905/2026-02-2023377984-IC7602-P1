@@ -11,3 +11,7 @@ spec:
       port: {{ .Values.api.port }}
       targetPort: {{ .Values.api.port }}
       protocol: TCP
+    - name: https
+      port: {{ .Values.api.tlsPort }}
+      targetPort: {{ .Values.api.tlsPort }}
+      protocol: TCP
