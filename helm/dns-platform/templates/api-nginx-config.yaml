@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dns-api-nginx
+data:
+  default.conf: |
+    server {
+        listen {{ .Values.api.tlsPort }} ssl;
+        server_name dns-api;
+        ssl_certificate /etc/dns-api-tls/tls.crt;
+        ssl_certificate_key /etc/dns-api-tls/tls.key;
+
+        location / {
+            proxy_pass http://127.0.0.1:{{ .Values.api.port }};
+        }
+    }

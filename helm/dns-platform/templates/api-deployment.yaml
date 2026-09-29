@@ -39,3 +39,24 @@ spec:
               value: {{ .Values.api.upstreamPort | quote }}
             - name: DNS_UPSTREAM_TIMEOUT_MS
               value: {{ .Values.api.upstreamTimeoutMs | quote }}
+        - name: https-proxy
+          image: nginx:alpine
+          ports:
+            - name: https
+              containerPort: {{ .Values.api.tlsPort }}
+              protocol: TCP
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/dns-api-tls
+              readOnly: true
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+              readOnly: true
+      volumes:
+        - name: tls
+          secret:
+            secretName: {{ .Values.api.tlsSecretName }}
+        - name: nginx-config
+          configMap:
+            name: dns-api-nginx

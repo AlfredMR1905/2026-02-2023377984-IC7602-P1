@@ -15,8 +15,9 @@ fn main() -> std::io::Result<()> {
     let listen_addr = env::var("DNS_LISTEN_ADDR").unwrap_or_else(|_| "0.0.0.0:5358".into());
     let api_base_url =
         env::var("DNS_API_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".into());
+    let api_ca_cert = env::var("DNS_API_CA_CERT").ok();
     let api = Arc::new(
-        ApiClient::new(api_base_url)
+        ApiClient::new(api_base_url, api_ca_cert.as_deref())
             .map_err(|error| io::Error::new(ErrorKind::InvalidInput, error))?,
     );
     let selector = Arc::new(PolicySelector::new());

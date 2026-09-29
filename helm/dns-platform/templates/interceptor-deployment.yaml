@@ -24,4 +24,17 @@ spec:
             - name: DNS_LISTEN_ADDR
               value: "0.0.0.0:{{ .Values.interceptor.port }}"
             - name: DNS_API_BASE_URL
-              value: "http://dns-api:{{ .Values.api.port }}"
+              value: "https://dns-api:{{ .Values.api.tlsPort }}"
+            - name: DNS_API_CA_CERT
+              value: /etc/dns-api-ca/tls.crt
+          volumeMounts:
+            - name: dns-api-ca
+              mountPath: /etc/dns-api-ca
+              readOnly: true
+      volumes:
+        - name: dns-api-ca
+          secret:
+            secretName: {{ .Values.api.tlsSecretName }}
+            items:
+              - key: tls.crt
+                path: tls.crt
